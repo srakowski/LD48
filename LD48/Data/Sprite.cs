@@ -1,9 +1,11 @@
-﻿using Microsoft.Xna.Framework;
+﻿using LD48.Core;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 
 namespace LD48.Data
 {
-    struct SpriteTexture
+    struct SpriteTexture : IEntityData
     {
         public int TextureId;
         public Optional<Rectangle> SourceRectangle;
@@ -13,9 +15,11 @@ namespace LD48.Data
             TextureId = textureId;
             SourceRectangle = default;
         }
+
+        public static SpriteTexture New(int textureId) => new SpriteTexture(textureId);
     }
 
-    struct SpriteText
+    struct SpriteText : IEntityData
     {
         public int SpriteFontId;
         public string Text;
@@ -27,7 +31,7 @@ namespace LD48.Data
         }
     }
 
-    struct SpriteEtc
+    struct SpriteEtc : IEntityData
     {
         public Color Color;
         public Vector2 Origin;

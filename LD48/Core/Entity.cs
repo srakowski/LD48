@@ -1,46 +1,31 @@
 ﻿namespace LD48.Core
 {
-    class Entity
+    using System.Collections.Generic;
+
+    struct Entity
     {
-        private EntityDataManager _entityDataManager;
-
-        public Entity(EntityDataManager entityDataManager)
+        public Entity(int id)
         {
-            _entityDataManager = entityDataManager;
+            Id = id;
         }
 
-        public long Archetype { get; private set; }
+        public int Id { get; }
 
-        public Entity SetData<T>(T data) where T : struct
+        public static EntityBuilder New => new EntityBuilder();
+    }
+
+    class EntityBuilder
+    {
+        private List<IEntityData> _entityData = new();
+
+        public EntityBuilder AddData<T>(T gameData) where T : IEntityData
         {
-            var flag = _entityDataManager.SetData(this, data);
-            AddFlagToArchetype(flag);
+            _entityData.Add(gameData);
             return this;
         }
 
-        public T GetData<T>() where T : struct
-        {
-            return _entityDataManager.GetData<T>(this);
-        }
+        public IEnumerable<IEntityData> EntityData => _entityData;
 
-        public Entity RemoveData<T>(T data = default) where T : struct
-        {
-            var flag = _entityDataManager.RemoveData<T>(this);
-            RemoveFlagFromArchetype(flag);
-            return this;
-        }
-
-        private void AddFlagToArchetype(EntityDataTypeFlag flag)
-        {
-            Archetype |= flag.Value;
-        }
-
-        private void RemoveFlagFromArchetype(EntityDataTypeFlag flag)
-        {
-            if ((Archetype & flag.Value) != 0)
-            {
-                Archetype ^= flag.Value;
-            }
-        }
+        public static EntityBuilder operator +(EntityBuilder eb, IEntityData data) => eb.AddData(data);
     }
 }

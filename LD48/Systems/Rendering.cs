@@ -1,4 +1,5 @@
-﻿using LD48.Data;
+﻿using LD48.Core;
+using LD48.Data;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
@@ -78,27 +79,26 @@ namespace LD48.Systems
         }
     }
 
-    class RenderingSystem : DrawableGameComponent
+    class RenderingSystem : GameSystem
     {
-        private SpriteBatch _spriteBatch;
-        private Texture2D[] _textures;
-        private SpriteFont[] _spriteFonts;
+        //private SpriteBatch _spriteBatch;
+        //private Texture2D[] _textures;
+        //private SpriteFont[] _spriteFonts;
 
-        public RenderingSystem(Game game) : base(game)
-        {
-            game.Components.Add(this);
-        }
+        //public RenderingSystem(Scene scene)
+        //{
+        //}
 
-        public override void Initialize()
-        {
-            base.Initialize();
-            _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
-        }
+        //public override void Initialize()
+        //{
+        //    base.Initialize();
+        //    _spriteBatch = new SpriteBatch(Game.GraphicsDevice);
+        //}
 
-        protected override void LoadContent()
-        {
-            _textures = GameContent.Texture2Ds.Load(Game.Content);
-            _spriteFonts = GameContent.SpriteFonts.Load(Game.Content);
-        }
+        //protected override void LoadContent()
+        //{
+        //    _textures = GameContent.Texture2Ds.Load(Game.Content);
+        //    _spriteFonts = GameContent.SpriteFonts.Load(Game.Content);
+        //}
     }
 }

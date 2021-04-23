@@ -1,16 +1,14 @@
 ﻿namespace LD48
 {
     using LD48.Core;
-    using LD48.Data;
-    using LD48.Systems;
+    using LD48.Scenes;
     using Microsoft.Xna.Framework;
     using System;
+    using System.Collections.Generic;
 
     public class LD48Game : Game
     {
         private GraphicsDeviceManager _graphics;
-        private EntityDataManager _entityDataManager;
-        private Entity _dummy;
 
         public LD48Game()
         {
@@ -18,21 +16,21 @@
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
 
-            _entityDataManager = new EntityDataManager();
-            _entityDataManager.Initialize("LD48.Data");
+            var engine = new Engine(this, new Dictionary<string, Func<Scene>>
+            {
+                { nameof(MainMenu), MainMenu.Create },
+                { nameof(Gameplay), Gameplay.Create },
+            });
 
-            new RenderingSystem(this);
+            engine.Start(nameof(MainMenu));
         }
 
         protected override void Initialize()
         {
-            _dummy = new Entity(_entityDataManager);
-
-            _dummy
-                .SetData(Transform.New)
-                .SetData(new SpriteTexture(GameContent.Texture2Ds.dummy));
-
             base.Initialize();
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 1024;
+            _graphics.ApplyChanges();
         }
 
         [STAThread]

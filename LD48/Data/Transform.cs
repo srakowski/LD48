@@ -1,8 +1,9 @@
 ﻿namespace LD48.Data
 {
+    using LD48.Core;
     using Microsoft.Xna.Framework;
 
-    struct Transform
+    struct Transform : IEntityData
     {
         public Vector2 Position;
         public float Rotation;
