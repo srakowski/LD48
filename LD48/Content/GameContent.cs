@@ -53,12 +53,18 @@ namespace LD48
 		}
 		public static class Texture2Ds
 		{
-			public const int dummy = 0; // "Texture2D/dummy"
+			public const int card = 0; // "Texture2D/card"
+			public const int drill = 1; // "Texture2D/drill"
+			public const int dummy = 2; // "Texture2D/dummy"
+			public const int tiles = 3; // "Texture2D/tiles"
 			public static Texture2D[] Load(ContentManager content)
 			{
 				return new Texture2D[]
 				{
+					content.Load<Texture2D>("Texture2D/card"),
+					content.Load<Texture2D>("Texture2D/drill"),
 					content.Load<Texture2D>("Texture2D/dummy"),
+					content.Load<Texture2D>("Texture2D/tiles"),
 				};
 			}
 		}

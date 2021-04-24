@@ -37,6 +37,5 @@
     <Folder Include="Content\Song\" />
     <Folder Include="Content\SpriteFont\" />
     <Folder Include="Content\SoundEffect\" />
-    <Folder Include="Content\Texture2D\" />
   </ItemGroup>
 </Project>
