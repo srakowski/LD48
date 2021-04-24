@@ -1,10 +1,7 @@
 ﻿namespace LD48
 {
-    using LD48.Core;
-    using LD48.Scenes;
     using Microsoft.Xna.Framework;
     using System;
-    using System.Collections.Generic;
 
     public class LD48Game : Game
     {
@@ -15,14 +12,6 @@
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-
-            var engine = new Engine(this, new Dictionary<string, Func<Scene>>
-            {
-                { nameof(MainMenu), MainMenu.Create },
-                { nameof(Gameplay), Gameplay.Create },
-            });
-
-            engine.Start(nameof(MainMenu));
         }
 
         protected override void Initialize()
@@ -31,6 +20,11 @@
             _graphics.PreferredBackBufferWidth = 1280;
             _graphics.PreferredBackBufferHeight = 1024;
             _graphics.ApplyChanges();
+        }
+
+        protected override void LoadContent()
+        {
+            base.LoadContent();
         }
 
         [STAThread]
