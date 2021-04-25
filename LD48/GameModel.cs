@@ -55,8 +55,8 @@
         public static Die YellowDie =>
             new Die(Yellow, Loot, Loot, Goblin, Goblin, Door, Door);
 
-        public static Die Red =>
-            new Die(Yellow, Loot, Goblin, Goblin, Goblin, Door, Door);
+        public static Die RedDie =>
+            new Die(Red, Loot, Goblin, Goblin, Goblin, Door, Door);
     }
 
     class Cup
@@ -94,7 +94,7 @@
         {
             Die.GreenDie, Die.GreenDie, Die.GreenDie, Die.GreenDie, Die.GreenDie, Die.GreenDie,
             Die.YellowDie, Die.YellowDie, Die.YellowDie, Die.YellowDie,
-            Die.Red, Die.Red, Die.Red
+            Die.RedDie, Die.RedDie, Die.RedDie
         };
 
         public static Cup GetCup() => new Cup();
@@ -133,9 +133,9 @@
                 : LevelMode.Dungeon;
 
         public int Level { get; private set; } = 0;
+        public int LootCount { get; private set; } = 1;
+        public int HordeCount { get; private set; } = 1;
         public int XP { get; private set; } = 0;
-        public int LootCount { get; private set; } = 0;
-        public int HordeCount { get; private set; } = 0;
 
         public IEnumerable<Die> GoblinKingRoll { get; private set; } = Enumerable.Empty<Die>();
 
@@ -153,10 +153,11 @@
         {
             if (_round != null) throw new Exception();
             Level = 1;
+            LootCount = 1;
+            HordeCount = 1;
             XP = 0;
-            LootCount = 0;
-            HordeCount = 0;
             _round = PlayRound();
+            _round.MoveNext();
         }
 
         private IEnumerator PlayRound()
@@ -164,29 +165,46 @@
             if (Mode == LevelMode.GoblinKing)
             {
                 ResetBoardState();
-                throw new Exception();
-            }
-            else if (Mode == LevelMode.AddToTheGoblinKingsHorde)
-            {
-                if (!CurrentRoll.Any(AreDoorDice)) throw new Exception();
-                var doorDice = CurrentRoll.Where(AreDoorDice);
-                var newDice = doorDice.Concat(_cup.DrawAllDice()).ToList();
+                var lootPlusXP = LootCount + XP;
+                while (true)
+                {                    
+                    var diceToDraw = Math.Min(lootPlusXP, 3);
+                    Message = $"You have {lootPlusXP} points available to attack the horde with.";
+                    _playerOptions.Clear();
+                    _playerOptions.Add(($"Buy and roll {diceToDraw} dice.", () => _round.MoveNext()));
+                    yield return null;
+                    ResetCup();
+                    lootPlusXP -= diceToDraw;
+                    var dice = _cup.DrawDice(diceToDraw).ToList();
+                    dice.ForEach(d => d.Roll());
+                    CurrentRoll = dice;
+                    var kills = Math.Min(dice.Count(AreGoblinDice), HordeCount);
+                    HordeCount -= kills;
+                    Message = $"You killed {kills} goblins with that roll!";
+                    _playerOptions.Clear();
+                    _playerOptions.Add(($"Continue.", () => _round.MoveNext()));
+                    yield return null;
+                    if (HordeCount == 0 || lootPlusXP == 0)
+                    {
+                        break;
+                    }
+                }
+
+                if (HordeCount == 0)
+                {
+                    Message = $"You killed the goblin horde, you win!";
+                }
+                else
+                {
+                    Message = $"You could not defeat the goblin horde, you lose!";
+                }
                 _playerOptions.Clear();
-                _playerOptions.Add(("Roll to add to the Goblin King's horde", () => _round.MoveNext()));
+                _playerOptions.Add(($"Play again...", () => _round.MoveNext()));
                 yield return null;
-                newDice.ForEach(d => d.Roll());
-                GoblinKingRoll = newDice;
-                HordeCount += GoblinKingRoll.Count(AreGoblinDice);
-                _playerOptions.Clear();
-                _playerOptions.Add(("Continue to the next level", () => _round.MoveNext()));
-                yield return null;
-                _choice = PlayerChoice.None;
-                NextLevel();
             }
             else
             {
                 ResetBoardState();
-                _cup.Shake();
                 var dice = _cup.DrawDice(3).ToList();
                 dice.ForEach(d => d.Roll());
                 UpdateState(dice);
@@ -195,17 +213,40 @@
                 {
                     if (_choice == PlayerChoice.GoDeeper)
                     {
-                        XP++;
+                        XP += _activeGoblinDice.Count();
                         var doorDice = CurrentRoll.Where(AreDoorDice);
                         _cup.Shake();
                         var newDice = doorDice.Concat(_cup.DrawDice(3 - doorDice.Count())).ToList();
                         newDice.ForEach(d => d.Roll());
                         UpdateState(dice);
+                        yield return null;
                     }
                     else if (_choice == PlayerChoice.EscapeWithTheLoot)
                     {
                         LootCount += _activeLootDice.Count();
                         NextLevel();
+                        break;
+                    }
+                    else if (Mode == LevelMode.AddToTheGoblinKingsHorde)
+                    {
+                        if (!CurrentRoll.Any(AreDoorDice)) throw new Exception();
+                        var doorDice = CurrentRoll.Where(AreDoorDice);
+                        var newDice = doorDice.Concat(_cup.DrawAllDice()).ToList();
+                        Message = "You chose to run away with the loot. The goblin king will try to recruit any goblins left in this dungeon for the horde.";
+                        _playerOptions.Clear();
+                        _playerOptions.Add(("Roll to add to the Goblin King's horde", () => _round.MoveNext()));
+                        yield return null;
+                        newDice.ForEach(d => d.Roll());
+                        GoblinKingRoll = newDice;
+                        var goblinsToAdd = GoblinKingRoll.Count(AreGoblinDice);
+                        HordeCount += goblinsToAdd;
+                        Message = $"The goblin king recruited {goblinsToAdd} goblins for the horde!";
+                        _playerOptions.Clear();
+                        _playerOptions.Add(("Continue to the next level", () => _round.MoveNext()));
+                        yield return null;
+                        _choice = PlayerChoice.None;
+                        NextLevel();
+                        break;
                     }
                     else
                     {
@@ -227,12 +268,18 @@
 
         private void ResetBoardState()
         {
-            _cup = Box.GetCup();
-            _cup.PlaceDiceInCup(Box.GetDice());
+            ResetCup();
             _activeLootDice.Clear();
             _activeGoblinDice.Clear();
             _playerOptions.Clear();
             _choice = PlayerChoice.None;
+        }
+
+        private void ResetCup()
+        {
+            _cup = Box.GetCup();
+            _cup.PlaceDiceInCup(Box.GetDice());
+            _cup.Shake();
         }
 
         private void UpdateBoardState(List<Die> dice)
@@ -249,8 +296,9 @@
 
             if (_activeGoblinDice.Count >= 3)
             {
-                Message = "You've been killed by goblins!";
+                Message = "You've been killed by goblins! These goblins have been added to the horde.";
                 _playerOptions.Add(("Reincarnate in the next level", NextLevel));
+                HordeCount += ActiveGoblinDice.Count();
                 return;
             }
 
@@ -272,6 +320,7 @@
             Level++;
             _round = null;
             _round = PlayRound();
+            _round.MoveNext();
         }
 
         private void EscapeWithTheLoot()
