@@ -17,7 +17,7 @@
                     st.SourceRectangle,
                     sprite.Etc.Color ?? Color.White,
                     sprite.Transform.Rotation,
-                    sprite.Etc.Origin,
+                    sprite.Etc.Origin ?? texture.Bounds.Center.ToVector2(),
                     sprite.Transform.Scale ?? 1f,
                     sprite.Etc.SpriteEffects,
                     sprite.Etc.LayerDepth
@@ -34,7 +34,7 @@
                     sprite.Transform.Position,
                     sprite.Etc.Color ?? Color.White,
                     sprite.Transform.Rotation,
-                    sprite.Etc.Origin,
+                    sprite.Etc.Origin ?? Vector2.Zero,
                     sprite.Transform.Scale ?? 1f,
                     sprite.Etc.SpriteEffects,
                     sprite.Etc.LayerDepth

@@ -53,7 +53,7 @@
     struct SpriteEtc
     {
         public Color? Color;
-        public Vector2 Origin;
+        public Vector2? Origin;
         public SpriteEffects SpriteEffects;
         public float LayerDepth;
     }
