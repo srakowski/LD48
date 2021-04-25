@@ -2,6 +2,7 @@
 {
     using Microsoft.Xna.Framework;
     using Microsoft.Xna.Framework.Graphics;
+    using Microsoft.Xna.Framework.Input;
     using System;
     using System.Collections.Generic;
     using static GameContent;
@@ -11,8 +12,8 @@
         private readonly GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
         private LoadedGameContent _loadedContent;
-        private GameState _gameState;
-        private List<MapSlotWidget> _cardWidgets;
+        private GameBoard _gameBoard;
+        private List<Widget> _widgets;
 
         public LD48Game()
         {
@@ -20,7 +21,8 @@
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             Window.AllowUserResizing = true;
-            _gameState = new GameState();
+            _widgets = new List<Widget>();
+            _gameBoard = new GameBoard();
         }
 
         protected override void Initialize()
@@ -30,39 +32,53 @@
             _graphics.PreferredBackBufferHeight = 1200;
             _graphics.ApplyChanges();
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            _gameState.Reset();
 
-            _cardWidgets = new List<MapSlotWidget>();
-            foreach (var slot in _gameState.GameBoard.Map)
-            { 
-                var pos = new Vector2(20, 20) + (slot.Position.ToVector2() * new Vector2(250, 346));
-                var size = new Vector2(240, 336);
-                _cardWidgets.Add(new MapSlotWidget(pos, size, slot));
+            _gameBoard.Reset();
+            foreach (var slot in _gameBoard.Map)
+            {
+                var size = _loadedContent.Textures[Texture2Ds.card].Bounds.Size.ToVector2();
+                var pos = new Vector2(20, 20) + (slot.Position.ToVector2() * (size + new Vector2(10, 10)));
+                _widgets.Add(new MapSlotWidget(pos, size, slot));
             }
         }
 
         protected override void LoadContent()
         {
             _loadedContent = new LoadedGameContent(
-                GameContent.Texture2Ds.Load(Content),
-                GameContent.SpriteFonts.Load(Content)
+                Texture2Ds.Load(Content),
+                SpriteFonts.Load(Content)
             );
         }
 
         protected override void Update(GameTime gameTime)
         {
             Input.Update();
+
+            if (Input.Curr.Mouse.LeftButton == ButtonState.Released &&
+                Input.Prev.Mouse.LeftButton == ButtonState.Pressed)
+            {
+                foreach (var widget in _widgets)
+                {
+                    var mousePos = Input.Curr.Mouse.Position;
+                    if (widget.ContainsPoint(mousePos))
+                        if (widget.ProcessClick(mousePos))
+                        {
+                            break;
+                        }
+                }
+            }
+
         }
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            var gb = _gameState.GameBoard;
+            var gb = _gameBoard;
 
             _spriteBatch.Begin();
 
-            foreach (var widget in _cardWidgets)
+            foreach (var widget in _widgets)
             {
                 widget.Draw(_spriteBatch, _loadedContent);
             }
