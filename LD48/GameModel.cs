@@ -115,6 +115,15 @@
         AddToTheGoblinKingsHorde
     }
 
+    enum Buttons
+    {
+        Deeper,
+        Roll,
+        Run,
+        Leave,
+        Respawn
+    }
+
     class DungeonDiceGame
     {
         public const int TOTAL_LEVELS = 7;
@@ -127,9 +136,9 @@
         private List<Die> _activeGoblinDice = new();
 
         public LevelMode Mode => Level == TOTAL_LEVELS
-            ? LevelMode.GoblinKing 
-            : _choice == PlayerChoice.RunAwayWithTheLoot 
-                ? LevelMode.AddToTheGoblinKingsHorde 
+            ? LevelMode.GoblinKing
+            : _choice == PlayerChoice.RunAwayWithTheLoot
+                ? LevelMode.AddToTheGoblinKingsHorde
                 : LevelMode.Dungeon;
 
         public int Level { get; private set; } = 0;
@@ -149,6 +158,12 @@
 
         public string Message { get; private set; }
 
+        public Buttons? LeftButton { get; private set; }
+        public Action LeftButtonAction { get; private set; }
+
+        public Buttons? RightButton { get; private set; }
+        public Action RightButtonAction { get; private set; }
+
         public void Play()
         {
             if (_round != null) throw new Exception();
@@ -162,15 +177,19 @@
 
         private IEnumerator PlayRound()
         {
+            CurrentRoll = Enumerable.Empty<Die>();
+            _activeGoblinDice.Clear();
+            _activeLootDice.Clear();
+
             if (Mode == LevelMode.GoblinKing)
             {
                 ResetBoardState();
                 var lootPlusXP = LootCount + XP;
                 while (true)
-                {                    
+                {
                     var diceToDraw = Math.Min(lootPlusXP, 3);
                     Message = $"You have {lootPlusXP} points available to attack the horde with.";
-                    _playerOptions.Clear();
+                    ClearOptions();
                     _playerOptions.Add(($"Buy and roll {diceToDraw} dice.", () => _round.MoveNext()));
                     yield return null;
                     ResetCup();
@@ -204,6 +223,8 @@
             }
             else
             {
+                SetButtons(null, null, Buttons.Roll, () => _round.MoveNext());
+                yield return null;
                 ResetBoardState();
                 var dice = _cup.DrawDice(3).ToList();
                 dice.ForEach(d => d.Roll());
@@ -256,6 +277,23 @@
             }
         }
 
+        private void SetButtons(Buttons? left, Action leftAction, Buttons? right, Action rightAction)
+        {
+            LeftButton = left;
+            LeftButtonAction = leftAction;
+            RightButton = right;
+            RightButtonAction = rightAction;
+        }
+
+        private void ClearOptions()
+        {
+            _playerOptions.Clear();
+            LeftButton = null;
+            LeftButtonAction = null;
+            RightButton = null;
+            RightButtonAction = null;
+        }
+
         private void UpdateState(List<Die> dice)
         {
             UpdateBoardState(dice);
@@ -268,10 +306,10 @@
 
         private void ResetBoardState()
         {
+            ClearOptions();
             ResetCup();
             _activeLootDice.Clear();
             _activeGoblinDice.Clear();
-            _playerOptions.Clear();
             _choice = PlayerChoice.None;
         }
 
@@ -296,6 +334,7 @@
 
             if (_activeGoblinDice.Count >= 3)
             {
+                SetButtons(Buttons.Respawn, NextLevel, null, null);
                 Message = "You've been killed by goblins! These goblins have been added to the horde.";
                 _playerOptions.Add(("Reincarnate in the next level", NextLevel));
                 HordeCount += ActiveGoblinDice.Count();
@@ -304,11 +343,13 @@
 
             if (!CurrentRoll.Any(AreDoorDice))
             {
+                SetButtons(Buttons.Leave, EscapeWithTheLoot, null, null);
                 Message = "There aren't any doors remaining in this dugeon.";
                 _playerOptions.Add(("Escape with the loot", EscapeWithTheLoot));
                 return;
             }
 
+            SetButtons(Buttons.Run, RunAwayWithTheLoot, Buttons.Deeper, GoDeeper);
             Message = "You have a choice!";
             _playerOptions.Add(("Go deeper and deeper", GoDeeper));
             _playerOptions.Add(("Run away with the loot", RunAwayWithTheLoot));
